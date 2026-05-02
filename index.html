@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكي دارة Binary إلى Gray Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #00d2ff;
+            border-bottom: 1px solid rgba(0,210,255,0.3);
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .input-label span {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .toggle-btn {
+            width: 70px;
+            height: 35px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .toggle-btn.off {
+            background: linear-gradient(135deg, #ff4757, #c0392b);
+            color: white;
+        }
+
+        .toggle-btn.on {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .toggle-btn::after {
+            content: '';
+            position: absolute;
+            width: 27px;
+            height: 27px;
+            background: white;
+            border-radius: 50%;
+            top: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.off::after { right: 4px; }
+        .toggle-btn.on::after  { left: 4px; }
+
+        .value-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 8px;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .value-0 {
+            background: rgba(255,71,87,0.2);
+            color: #ff4757;
+            border: 1px solid #ff4757;
+        }
+
+        .value-1 {
+            background: rgba(46,204,113,0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .gate-info {
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .gate-info:hover { background: rgba(255,255,255,0.07); }
+
+        .gate-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .gate-name {
+            font-weight: bold;
+            color: #3a7bd5;
+            font-size: 0.95rem;
+        }
+
+        .gate-formula {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .truth-table-container {
+            margin-top: 10px;
+            overflow-x: auto;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        th {
+            background: rgba(58,123,213,0.3);
+            padding: 7px 6px;
+            text-align: center;
+            color: #00d2ff;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        td {
+            padding: 5px 6px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+        }
+
+        tr:hover td { background: rgba(255,255,255,0.05); }
+
+        tr.active-row td {
+            background: rgba(58,123,213,0.25);
+            font-weight: bold;
+        }
+
+        /* result cards */
+        .result-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .bit-card {
+            flex: 1;
+            padding: 10px 6px;
+            border-radius: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .bit-card-label {
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        .formula-display {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #00d2ff;
+            border: 1px solid rgba(0,210,255,0.2);
+            line-height: 1.7;
+        }
+
+        .wire-legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .dec-display {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            gap: 8px;
+        }
+
+        .dec-box {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 10px 6px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dec-box .dec-val {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00d2ff;
+        }
+
+        .dec-box .dec-lbl {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔌 محاكي دارة Binary → Gray Code</h1>
+    <p class="subtitle">تحويل الترميز الثنائي 4-bit إلى ترميز Gray باستخدام بوابات XOR فقط<br>Created by : Mohamad Zalaf</p>
+
+    <div class="main-grid">
+
+        <!-- ===== LEFT PANEL ===== -->
+        <div>
+            <div class="panel">
+                <h2>🎛️ المداخل (Binary)</h2>
+                <div class="formula-display">
+                    G₃ = B₃<br>
+                    G₂ = B₃ ⊕ B₂<br>
+                    G₁ = B₂ ⊕ B₁<br>
+                    G₀ = B₁ ⊕ B₀
+                </div>
+                <div id="input-controls"></div>
+
+                <!-- decimal display -->
+                <div class="dec-display">
+                    <div class="dec-box">
+                        <div class="dec-val" id="dec-bin">0</div>
+                        <div class="dec-lbl">قيمة Binary</div>
+                    </div>
+                    <div class="dec-box">
+                        <div class="dec-val" id="dec-gray">0</div>
+                        <div class="dec-lbl">قيمة Gray</div>
+                    </div>
+                </div>
+
+                <!-- gray output cards -->
+                <div class="result-panel">
+                    <div style="color:#aaa; font-size:0.85rem; margin-bottom:8px;">مخرجات Gray Code</div>
+                    <div class="result-row" id="gray-cards"></div>
+                </div>
+            </div>
+
+            <!-- gates state -->
+            <div class="panel" style="margin-top:20px;">
+                <h2>🔢 حالة البوابات</h2>
+                <div id="gates-display"></div>
+            </div>
+        </div>
+
+        <!-- ===== CANVAS ===== -->
+        <div class="canvas-container">
+            <canvas id="circuit-canvas"></canvas>
+            <div class="wire-legend">
+                <div class="legend-item">
+                    <div class="legend-line" style="background:#ff4757;"></div>
+                    <span>إشارة 0</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background:#2ecc71;"></div>
+                    <span>إشارة 1</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background:#f39c12;"></div>
+                    <span>مخرج Gray</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RIGHT PANEL: truth table ===== -->
+        <div class="panel">
+            <h2>📊 جدول الحقيقة</h2>
+            <div class="truth-table-container">
+                <table id="truth-table">
+                    <thead>
+                        <tr>
+                            <th>B₃</th><th>B₂</th><th>B₁</th><th>B₀</th>
+                            <th style="border-left:1px solid #3a7bd5;">G₃</th>
+                            <th>G₂</th><th>G₁</th><th>G₀</th>
+                        </tr>
+                    </thead>
+                    <tbody id="truth-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- end main-grid -->
+</div><!-- end container -->
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const inputs = { B3: 0, B2: 0, B1: 0, B0: 0 };
+
+// ─── Logic ───────────────────────────────────────────────────────────────────
+function XOR(a, b) { return a ^ b; }
+
+function computeGates(B3, B2, B1, B0) {
+    const G3 = B3;               // MSB passes through
+    const G2 = XOR(B3, B2);
+    const G1 = XOR(B2, B1);
+    const G0 = XOR(B1, B0);
+    return { G3, G2, G1, G0 };
+}
+
+// ─── Build input controls ─────────────────────────────────────────────────────
+function buildInputControls() {
+    const container = document.getElementById('input-controls');
+    ['B3','B2','B1','B0'].forEach((name, i) => {
+        const label = `B${3 - i}`;
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.innerHTML = `
+            <div class="input-label">
+                <span style="font-size:1.25rem;color:#00d2ff;">مدخل ${label} <span style="color:#666;font-size:0.8rem;">(MSB${i===0?'':i===3?' → LSB':''})</span></span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="value-display value-0" id="val-${name}">0</div>
+                    <button class="toggle-btn off" id="btn-${name}" onclick="toggleInput('${name}')">OFF</button>
+                </div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+function toggleInput(name) {
+    inputs[name] = inputs[name] === 0 ? 1 : 0;
+    updateAll();
+}
+
+function updateInputDisplay() {
+    ['B3','B2','B1','B0'].forEach(name => {
+        const v   = inputs[name];
+        const btn = document.getElementById(`btn-${name}`);
+        const vel = document.getElementById(`val-${name}`);
+        btn.className   = `toggle-btn ${v ? 'on' : 'off'}`;
+        btn.textContent = v ? 'ON' : 'OFF';
+        vel.textContent = v;
+        vel.className   = `value-display value-${v}`;
+    });
+}
+
+// ─── Gray output cards ────────────────────────────────────────────────────────
+function buildGrayCards() {
+    const row = document.getElementById('gray-cards');
+    ['G3','G2','G1','G0'].forEach(g => {
+        const div = document.createElement('div');
+        div.className = 'bit-card value-0';
+        div.id = `card-${g}`;
+        div.innerHTML = `<div>0</div><div class="bit-card-label">${g}</div>`;
+        row.appendChild(div);
+    });
+}
+
+function updateGrayCards(gates) {
+    ['G3','G2','G1','G0'].forEach(g => {
+        const v   = gates[g];
+        const el  = document.getElementById(`card-${g}`);
+        el.className = `bit-card value-${v}`;
+        el.querySelector('div').textContent = v;
+    });
+}
+
+// ─── Decimal displays ─────────────────────────────────────────────────────────
+function updateDecimals(gates) {
+    const { B3, B2, B1, B0 } = inputs;
+    const binVal  = (B3<<3)|(B2<<2)|(B1<<1)|B0;
+    const grayVal = (gates.G3<<3)|(gates.G2<<2)|(gates.G1<<1)|gates.G0;
+    document.getElementById('dec-bin').textContent  = binVal;
+    document.getElementById('dec-gray').textContent = grayVal;
+}
+
+// ─── Gates display ────────────────────────────────────────────────────────────
+function updateGatesDisplay(gates) {
+    const info = [
+        { name:'G₃', formula:'G₃ = B₃  (wire directo)', out: gates.G3, note:'بدون بوابة' },
+        { name:'G₂ (XOR)', formula:'G₂ = B₃ ⊕ B₂', out: gates.G2, note:'' },
+        { name:'G₁ (XOR)', formula:'G₁ = B₂ ⊕ B₁', out: gates.G1, note:'' },
+        { name:'G₀ (XOR)', formula:'G₀ = B₁ ⊕ B₀', out: gates.G0, note:'' },
+    ];
+    const container = document.getElementById('gates-display');
+    container.innerHTML = '';
+    info.forEach(g => {
+        const clr  = g.out ? '#2ecc71' : '#ff4757';
+        const bgClr= g.out ? 'rgba(46,204,113,0.15)' : 'rgba(255,71,87,0.15)';
+        const div  = document.createElement('div');
+        div.className = 'gate-info';
+        div.innerHTML = `
+            <div class="gate-header">
+                <span class="gate-name">${g.name}</span>
+                <span style="padding:2px 12px;border-radius:6px;background:${bgClr};
+                             border:1px solid ${clr};color:${clr};font-weight:bold;font-size:1.1rem;">
+                    ${g.out}
+                </span>
+            </div>
+            <div class="gate-formula">${g.formula} ${g.note ? '<span style="color:#f39c12;">— '+g.note+'</span>' : ''}</div>`;
+        container.appendChild(div);
+    });
+}
+
+// ─── Truth table ──────────────────────────────────────────────────────────────
+function buildTruthTable() {
+    const tbody = document.getElementById('truth-body');
+    tbody.innerHTML = '';
+    for (let i = 0; i < 16; i++) {
+        const B3=(i>>3)&1, B2=(i>>2)&1, B1=(i>>1)&1, B0=i&1;
+        const g = computeGates(B3,B2,B1,B0);
+        const tr = document.createElement('tr');
+        tr.id = `row-${i}`;
+        const gc = v => `color:${v?'#2ecc71':'#ff4757'}`;
+        const oc = v => `color:#f39c12;font-weight:bold;`;
+        tr.innerHTML = `
+            <td style="${gc(B3)}">${B3}</td>
+            <td style="${gc(B2)}">${B2}</td>
+            <td style="${gc(B1)}">${B1}</td>
+            <td style="${gc(B0)}">${B0}</td>
+            <td style="${oc(g.G3)};border-left:1px solid #3a7bd5">${g.G3}</td>
+            <td style="${oc(g.G2)}">${g.G2}</td>
+            <td style="${oc(g.G1)}">${g.G1}</td>
+            <td style="${oc(g.G0)}">${g.G0}</td>`;
+        tbody.appendChild(tr);
+    }
+}
+
+function updateActiveRow() {
+    const {B3,B2,B1,B0} = inputs;
+    const idx = (B3<<3)|(B2<<2)|(B1<<1)|B0;
+    document.querySelectorAll('#truth-body tr').forEach(r => r.classList.remove('active-row'));
+    const row = document.getElementById(`row-${idx}`);
+    if (row) { row.classList.add('active-row'); row.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+// ─── Canvas ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('circuit-canvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+    canvas.width  = canvas.parentElement.clientWidth;
+    canvas.height = 620;
+}
+
+const SIG  = v => v === 1 ? '#2ecc71' : '#ff4757';
+const GRAY = '#f39c12';
+
+/* Draw an XOR gate symbol */
+function drawXORGate(cx, cy, w, h, label, outVal) {
+    ctx.save();
+    const x = cx - w/2, y = cy - h/2;
+
+    // glow
+    if (outVal === 1) {
+        ctx.shadowColor = '#f39c12';
+        ctx.shadowBlur  = 18;
+    }
+
+    // body gradient
+    const grd = ctx.createLinearGradient(x, y, x+w, y+h);
+    grd.addColorStop(0, 'rgba(243,156,18,0.35)');
+    grd.addColorStop(1, 'rgba(243,156,18,0.10)');
+    ctx.fillStyle   = grd;
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth   = 2;
+
+    // curved XOR body
+    ctx.beginPath();
+    ctx.moveTo(x+8, y);
+    ctx.quadraticCurveTo(x+w*0.6, y,    x+w, cy);
+    ctx.quadraticCurveTo(x+w*0.6, y+h,  x+8, y+h);
+    ctx.quadraticCurveTo(x+w*0.3, cy,   x+8, y);
+    ctx.fill(); ctx.stroke();
+
+    // extra arc for XOR
+    ctx.beginPath();
+    ctx.moveTo(x+2, y);
+    ctx.quadraticCurveTo(x+w*0.22, cy, x+2, y+h);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    // label
+    ctx.fillStyle  = '#fff';
+    ctx.font       = 'bold 12px monospace';
+    ctx.textAlign  = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('XOR', cx+4, cy-6);
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(label, cx+4, cy+7);
+
+    // output dot
+    ctx.beginPath();
+    ctx.arc(x+w, cy, 5, 0, Math.PI*2);
+    ctx.fillStyle = SIG(outVal);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+/* Draw a straight-through buffer (wire) for G3 = B3 */
+function drawBuffer(cx, cy, w, h, label, val) {
+    ctx.save();
+    const x = cx - w/2, y = cy - h/2;
+    const grd = ctx.createLinearGradient(x, y, x+w, y+h);
+    grd.addColorStop(0, 'rgba(0,210,255,0.25)');
+    grd.addColorStop(1, 'rgba(0,210,255,0.08)');
+    ctx.fillStyle   = grd;
+    ctx.strokeStyle = '#00d2ff';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle    = '#fff';
+    ctx.font         = 'bold 12px monospace';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('WIRE', cx, cy-6);
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(label, cx, cy+7);
+
+    ctx.beginPath();
+    ctx.arc(x+w, cy, 5, 0, Math.PI*2);
+    ctx.fillStyle = SIG(val);
+    ctx.fill();
+    ctx.restore();
+}
+
+/* Orthogonal wire */
+function wire(x1, y1, x2, y2, val, label) {
+    ctx.save();
+    ctx.strokeStyle = SIG(val);
+    ctx.lineWidth   = 2.5;
+    ctx.shadowColor = SIG(val);
+    ctx.shadowBlur  = val === 1 ? 7 : 0;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    const mx = (x1+x2)/2;
+    ctx.lineTo(mx, y1);
+    ctx.lineTo(mx, y2);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.fillStyle = SIG(val);
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 0;
+        ctx.fillText(label, mx, Math.min(y1,y2) - 4);
+    }
+    ctx.restore();
+}
+
+/* Output wire (orange) */
+function outWire(x1, y1, x2, y2, val, label) {
+    ctx.save();
+    ctx.strokeStyle = GRAY;
+    ctx.lineWidth   = 3;
+    ctx.shadowColor = GRAY;
+    ctx.shadowBlur  = val===1 ? 12 : 3;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+    if (label) {
+        ctx.fillStyle = GRAY;
+        ctx.font = 'bold 13px monospace';
+        ctx.textAlign = 'left';
+        ctx.shadowBlur = 0;
+        ctx.fillText(label, x2+6, y2+4);
+    }
+    ctx.restore();
+}
+
+function drawDot(x, y, val) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI*2);
+    ctx.fillStyle = SIG(val);
+    ctx.shadowColor = SIG(val);
+    ctx.shadowBlur  = 8;
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawCircuit(gates) {
+    const {B3,B2,B1,B0} = inputs;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let x=0; x<canvas.width; x+=30) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+    for (let y=0; y<canvas.height; y+=30) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+    const W = canvas.width;
+
+    // Layout
+    const inX  = 55;       // input labels x center
+    const gX   = 220;      // gate centers x
+    const gW   = 100, gH = 48;
+    const outX = W - 80;   // output labels x
+
+    // Row centers
+    const rows = {
+        B3: 90,
+        B2: 210,
+        B1: 330,
+        B0: 450,
+    };
+    // Gate row centers (between the two inputs they connect)
+    const gRows = {
+        G3: rows.B3,                        // buffer, same row
+        G2: (rows.B3 + rows.B2) / 2,        // between B3 & B2
+        G1: (rows.B2 + rows.B1) / 2,        // between B2 & B1
+        G0: (rows.B1 + rows.B0) / 2,        // between B1 & B0
+    };
+
+    // ── Draw input labels ──────────────────────────────────────────────────
+    const binVals = { B3, B2, B1, B0 };
+    Object.entries(rows).forEach(([name, y]) => {
+        const v = binVals[name];
+        ctx.save();
+        ctx.fillStyle = SIG(v);
+        ctx.font = 'bold 17px monospace';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = SIG(v);
+        ctx.shadowBlur  = 8;
+        const lbl = name.replace('B','B₃B₂B₁B₀'.split('').find((_,i)=>name==='B'+i)||name[1]);
+        ctx.fillText(`${name}=${v}`, inX, y+5);
+        ctx.restore();
+    });
+
+    // ── Vertical bus lines on input side ──────────────────────────────────
+    // thin vertical guide lines
+    const busX = inX + 38;
+    ctx.save();
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(busX, rows.B3); ctx.lineTo(busX, rows.B0); ctx.stroke();
+    ctx.restore();
+
+    // ── G3: buffer (B3 straight through) ──────────────────────────────────
+    drawBuffer(gX, gRows.G3, gW, gH, 'G₃=B₃', B3);
+    wire(inX+28, rows.B3, gX - gW/2, gRows.G3, B3, '');
+    // tap point for G2 input
+    drawDot(busX + 5, rows.B3, B3);
+
+    // ── G2: XOR(B3, B2) ───────────────────────────────────────────────────
+    drawXORGate(gX, gRows.G2, gW, gH, 'G₂=B₃⊕B₂', gates.G2);
+    // B3 → G2 (top input)
+    wire(busX+5, rows.B3, gX - gW/2 + 10, gRows.G2 - 10, B3);
+    // B2 → G2 (bottom input)
+    wire(inX+28, rows.B2, gX - gW/2 + 10, gRows.G2 + 10, B2);
+    drawDot(busX + 5, rows.B2, B2);
+
+    // ── G1: XOR(B2, B1) ───────────────────────────────────────────────────
+    drawXORGate(gX, gRows.G1, gW, gH, 'G₁=B₂⊕B₁', gates.G1);
+    wire(busX+5, rows.B2, gX - gW/2 + 10, gRows.G1 - 10, B2);
+    wire(inX+28, rows.B1, gX - gW/2 + 10, gRows.G1 + 10, B1);
+    drawDot(busX + 5, rows.B1, B1);
+
+    // ── G0: XOR(B1, B0) ───────────────────────────────────────────────────
+    drawXORGate(gX, gRows.G0, gW, gH, 'G₀=B₁⊕B₀', gates.G0);
+    wire(busX+5, rows.B1, gX - gW/2 + 10, gRows.G0 - 10, B1);
+    wire(inX+28, rows.B0, gX - gW/2 + 10, gRows.G0 + 10, B0);
+
+    // ── Output wires (orange) ──────────────────────────────────────────────
+    const gateOutX = gX + gW/2;
+    const outLabels = ['G₃','G₂','G₁','G₀'];
+    const gKeys     = ['G3','G2','G1','G0'];
+
+    gKeys.forEach((key, i) => {
+        const gy  = gRows[key];
+        const val = gates[key];
+        outWire(gateOutX, gy, outX, gy, val, `${outLabels[i]}=${val}`);
+    });
+
+    // ── Section annotation ─────────────────────────────────────────────────
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,210,255,0.4)';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('── مداخل Binary ──', inX, 30);
+    ctx.fillStyle = 'rgba(243,156,18,0.6)';
+    ctx.fillText('── مخرجات Gray Code ──', outX + 20, 30);
+    ctx.restore();
+
+    // ── Binary & Gray summary bar ──────────────────────────────────────────
+    const sumY = canvas.height - 45;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.roundRect(20, sumY - 15, canvas.width - 40, 50, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    const binStr  = `${B3}${B2}${B1}${B0}`;
+    const grayStr = `${gates.G3}${gates.G2}${gates.G1}${gates.G0}`;
+    const dec     = parseInt(binStr,2);
+    ctx.fillStyle = '#00d2ff';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText(`Binary: ${binStr}  (${dec})   →   Gray: ${grayStr}`, canvas.width/2, sumY + 14);
+    ctx.restore();
+}
+
+// ─── Master update ────────────────────────────────────────────────────────────
+function updateAll() {
+    const {B3,B2,B1,B0} = inputs;
+    const gates = computeGates(B3,B2,B1,B0);
+    updateInputDisplay();
+    updateGatesDisplay(gates);
+    updateGrayCards(gates);
+    updateDecimals(gates);
+    updateActiveRow();
+    drawCircuit(gates);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildInputControls();
+buildGrayCards();
+buildTruthTable();
+resizeCanvas();
+updateAll();
+
+window.addEventListener('resize', () => { resizeCanvas(); updateAll(); });
+</script>
+</body>
+</html>
